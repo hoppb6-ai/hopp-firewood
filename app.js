@@ -11,27 +11,17 @@ const Storage=(()=>{const KEY='hf.data.v1';const subs=[];
     save(d){localStorage.setItem(KEY,JSON.stringify(d));subs.forEach(f=>f(d))},
     subscribe(fn){subs.push(fn);return()=>subs.splice(subs.indexOf(fn),1)}}})();
 
-/* ================= AUTH MODULE =================
- * v1: local-only users (SHA-256 + random salt via WebCrypto). Only gates the app on THIS device.
- * TODO(Firebase Auth): Replace with Firebase Authentication (email/password).
- *  Remember me -> setPersistence(browserLocalPersistence) else browserSessionPersistence.
- *  signIn -> signInWithEmailAndPassword, signOut -> signOut, onChange -> onAuthStateChanged.
+/* ================= SESSION PIN =================
+ * Client-side soft gate only, NOT authentication or encryption. The test PIN is
+ * public in this static source; never use this to protect sensitive information.
+ * sessionStorage remembers unlock only for this browser tab's session.
+ * Legacy hf.users / hf.session data is intentionally untouched but not used.
  */
-const Auth=(()=>{const UK='hf.users',SK='hf.session';const subs=[];
-  const users=()=>JSON.parse(localStorage.getItem(UK)||'[]');
-  const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
-  async function hash(pw,salt){return hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+':'+pw)))}
-  const emit=()=>subs.forEach(f=>f(Auth.currentUser()));
-  return{hasUsers:()=>users().length>0,listUsers:()=>users().map(u=>u.username),
-    async createUser(username,pw){username=username.trim();if(!username||pw.length<4)throw Error('Username and a password of 4+ characters required');
-      const us=users();if(us.some(u=>u.username.toLowerCase()===username.toLowerCase()))throw Error('That username exists');
-      const salt=hex(crypto.getRandomValues(new Uint8Array(16)));us.push({username,salt,hash:await hash(pw,salt)});localStorage.setItem(UK,JSON.stringify(us))},
-    async signIn(username,pw,remember){const u=users().find(x=>x.username.toLowerCase()===username.trim().toLowerCase());
-      if(!u||await hash(pw,u.salt)!==u.hash)throw Error('Wrong username or password');
-      localStorage.removeItem(SK);sessionStorage.removeItem(SK);(remember?localStorage:sessionStorage).setItem(SK,u.username);emit()},
-    signOut(){localStorage.removeItem(SK);sessionStorage.removeItem(SK);emit()},
-    currentUser(){const n=localStorage.getItem(SK)||sessionStorage.getItem(SK);return n&&users().some(u=>u.username===n)?n:null},
-    onChange(fn){subs.push(fn)}}})();
+const Auth=(()=>{const KEY='hf.pin.unlocked';const subs=[];
+ return{currentUser:()=>sessionStorage.getItem(KEY)==='yes'?(localStorage.getItem('hf.operator')||'Brandon'):null,
+ unlock(pin){if(pin!=='1234')return false;sessionStorage.setItem(KEY,'yes');subs.forEach(f=>f());return true},
+ signOut(){sessionStorage.removeItem(KEY);subs.forEach(f=>f())},
+ onChange(fn){subs.push(fn)}}})();
 
 /* ================= HELPERS ================= */
 const $=s=>document.querySelector(s);
@@ -41,13 +31,31 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
 const today=()=>{const d=new Date();return new Date(d-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 const me=()=>Auth.currentUser()||'?';
 const CATS=['Fuel','Equipment','Supplies','Packaging','Vehicle','Fees/Licenses','Other'];
-const BIZ='Hopp & Billy Hardwood (placeholder)';
-function seed(){return{products:[{id:uid(),name:'Pizza oven wood',unit:'box',price:35,qty:10},{id:uid(),name:'Smoker chunks',unit:'bag',price:15,qty:20},{id:uid(),name:'Firewood bundle',unit:'bundle',price:8,qty:30}],
-  accounts:[{id:uid(),business:'New Holland Knickerbocker',contact:'',phone:'',email:'',address:'Bridge St, Grand Rapids, MI',notes:'',usual:'',priceNotes:''}],
-  invoices:[],expenses:[],stockLog:[],nextInvoice:1001,taxRate:0,lastBackup:null}}
-let D=Storage.load()||seed();
+const BIZ='Hopp Firewood';
+function emptyData(){return{products:[],accounts:[],invoices:[],expenses:[],stockLog:[],nextInvoice:1001,taxRate:0,lastBackup:null,sampleData:false}}
+function seed(){
+ const d=emptyData(), day=n=>{const t=new Date();t.setDate(t.getDate()+n);return new Date(t-t.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
+ d.sampleData=true;
+ d.products=[{id:'wood',name:'Kiln-dried firewood',unit:'bundle',price:8,qty:120},{id:'pizza',name:'Pizza-oven hardwood splits',unit:'box',price:35,qty:48},{id:'smoker',name:'Smoker hardwood chunks',unit:'bag',price:15,qty:65}];
+ d.accounts=[
+ {id:'nh',business:'New Holland Knickerbocker',contact:'',phone:'',email:'',address:'Grand Rapids, MI',notes:'Sample delivery details — confirm receiving instructions before delivery.',usual:'8 boxes pizza-oven wood',priceNotes:'Sample pricing: $35 / box'},
+ {id:'sample-pizza',business:'Riverbend Pizza Co. (Sample)',contact:'Sample customer',address:'Fictional Grand Rapids business',notes:'Sample: use rear receiving entrance.',usual:'6 boxes pizza-oven wood'},
+ {id:'sample-bbq',business:'Lakeshore Smokehouse (Sample)',contact:'Sample customer',address:'Fictional West Michigan business',notes:'Sample: call before delivery.',usual:'12 bags smoker wood'},
+ {id:'sample-home',business:'Maple Grove Campground (Sample)',contact:'Sample customer',address:'Fictional West Michigan campground',notes:'Sample: stack at woodshed.',usual:'30 firewood bundles'}];
+ const line=(id,qty)=>{const p=d.products.find(p=>p.id===id);return{pid:id,name:p.name+' ('+p.unit+')',qty,price:p.price}};
+ const invoice=(id,num,accountId,offset,lines,paid,delivered,by)=>({id,num,accountId,date:day(offset),lines,paid,delivered,by,taxRate:0,note:'SAMPLE INVOICE — demonstration only, not an actual charge.',createdAt:Date.now(),...(delivered?{deliveredBy:by}:{}),...(paid?{paidAt:Date.now()}: {})});
+ d.invoices=[invoice('sample-1001',1001,'nh',-7,[line('pizza',8),line('smoker',4)],true,true,'Brandon'),invoice('sample-1002',1002,'sample-bbq',-3,[line('smoker',12)],false,true,'Billy'),invoice('sample-1003',1003,'sample-pizza',1,[line('pizza',6)],false,false,'Brandon'),invoice('sample-1004',1004,'sample-home',2,[line('wood',30)],false,false,'Billy'),invoice('sample-1005',1005,'nh',0,[line('pizza',8)],false,false,'Billy')];
+ d.expenses=[{id:'fuel',date:day(-2),amount:62.40,category:'Fuel',vendor:'Delivery fuel (Sample)',note:'Sample expense',by:'Billy'},{id:'bags',date:day(-5),amount:48,category:'Packaging',vendor:'Wood bags & labels (Sample)',note:'Sample expense',by:'Brandon'},{id:'supplies',date:day(-8),amount:95,category:'Supplies',vendor:'Kiln supplies (Sample)',note:'Sample expense',by:'Brandon'}];
+ d.stockLog=d.products.map(p=>({at:Date.now()-86400000,by:'Brandon',pid:p.id,name:p.name,delta:p.qty,reason:'Sample opening stock'}));
+ d.nextInvoice=1006;return d;
+}
+// Seed once only when this app's data key is absent. An intentionally cleared
+// (persisted empty) dataset stays empty across reloads. Never replace saved data.
+let D;
+try{const raw=localStorage.getItem('hf.data.v1');D=raw===null?seed():JSON.parse(raw);if(!D||!Array.isArray(D.products)||!Array.isArray(D.accounts)||!Array.isArray(D.invoices)||!Array.isArray(D.expenses)||!Array.isArray(D.stockLog))throw Error('Invalid saved data');if(raw===null)Storage.save(D)}
+catch(e){document.getElementById('app').textContent='Saved data could not be read. Export or recover your browser storage before continuing.';throw e}
 function save(){Storage.save(D)}
-let tab='inv';
+let tab='home';
 Storage.subscribe(()=>render());
 Auth.onChange(()=>boot());
 
@@ -57,28 +65,34 @@ $('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal()})
 const val=id=>document.getElementById(id).value;
 
 /* ================= AUTH SCREENS ================= */
-function authScreen(){$('#nav').style.display='none';$('#who').textContent='';
-  const setup=!Auth.hasUsers();
-  $('#app').innerHTML=`<div class="card"><h2>${setup?'Create first user':'Sign in'}</h2>
-  ${setup?'<p class="muted">First run on this device. Create your login; you can add your partner afterward under More.</p>':''}
-  <label>Username</label><input id="au" autocomplete="username" autocapitalize="none">
-  <label>Password</label><input id="ap" type="password" autocomplete="${setup?'new-password':'current-password'}">
-  <label class="row" style="justify-content:flex-start"><input id="ar" type="checkbox" style="width:24px;flex:0" checked> Remember me on this device</label>
-  <p id="aerr" style="color:var(--bad)"></p><button id="ago" style="width:100%">${setup?'Create & sign in':'Sign in'}</button></div>`;
-  $('#ago').onclick=async()=>{try{if(setup)await Auth.createUser(val('au'),val('ap'));await Auth.signIn(val('au'),val('ap'),$('#ar').checked)}catch(e){$('#aerr').textContent=e.message}};
+let pinEntry='';
+function authScreen(){pinEntry='';$('#nav').style.display='none';$('#who').textContent='';
+ $('#app').innerHTML=`<section class="pin-screen"><div class="pin-mark">HF</div><p class="eyebrow">HOPP FIREWOOD</p><h2>Welcome back</h2><p class="muted">Enter your 4-digit PIN to unlock</p><div id="pin-dots" class="pin-dots" aria-label="0 of 4 digits entered">${'<span></span>'.repeat(4)}</div><p id="aerr" role="status" aria-live="polite"></p><div class="keypad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button onclick="pinKey('${n}')">${n}</button>`).join('')}<button class="sec" onclick="pinKey('clear')" aria-label="Clear PIN">Clear</button><button onclick="pinKey('0')">0</button><button class="sec" onclick="pinKey('back')" aria-label="Delete last digit">⌫</button></div><p class="muted">Test PIN: 1234</p><p class="pin-note muted">Device-only soft lock · Data stays on this browser</p></section>`;
 }
+function pinKey(key){if(Auth.currentUser())return;
+ if(key==='clear')pinEntry='';else if(key==='back')pinEntry=pinEntry.slice(0,-1);else if(/^\d$/.test(key)&&pinEntry.length<4)pinEntry+=key;
+ $('#aerr').textContent='';
+ if(pinEntry.length===4){if(Auth.unlock(pinEntry))return;pinEntry='';$('#aerr').textContent='Incorrect PIN. Try again.'}
+ $('#pin-dots').innerHTML=[0,1,2,3].map(n=>`<span class="${n<pinEntry.length?'filled':''}"></span>`).join('');$('#pin-dots').setAttribute('aria-label',`${pinEntry.length} of 4 digits entered`);
+}
+document.addEventListener('keydown',e=>{if(Auth.currentUser()||e.altKey||e.metaKey||e.ctrlKey)return;if(/^\d$/.test(e.key)||['Backspace','Escape'].includes(e.key)){e.preventDefault();pinKey(e.key==='Backspace'?'back':e.key==='Escape'?'clear':e.key)}});
 
 /* ================= TABS ================= */
-const TABS=[['inv','📦','Inventory'],['acc','🍕','Accounts'],['bill','🧾','Invoices'],['exp','💸','Expenses'],['more','⋯','More']];
+const ICONS={home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',inv:'<path d="m3 7 9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10M7 5l10 4"/>',acc:'<circle cx="9" cy="8" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M16 5a3 3 0 0 1 0 6M21 21v-3a6 6 0 0 0-4-5"/>',bill:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2zM9 7h6M9 11h6M9 15h3"/>',exp:'<rect x="3" y="5" width="18" height="15" rx="2"/><path d="M3 9h18M16 14h5M6 5V3h12"/>',more:'<path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2" fill="currentColor"/><circle cx="15" cy="12" r="2" fill="currentColor"/><circle cx="9" cy="18" r="2" fill="currentColor"/>'};
+const icon=k=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[k]}</svg>`;
+const TABS=[['home','Home'],['inv','Stock'],['acc','Clients'],['bill','Invoices'],['exp','Costs'],['more','Settings']];
 function render(){if(!Auth.currentUser())return authScreen();
-  $('#who').textContent='👤 '+me();$('#nav').style.display='flex';
-  $('#nav').innerHTML=TABS.map(([k,i,l])=>`<button class="${k===tab?'on':''}" onclick="tab='${k}';render();scrollTo(0,0)"><div style="font-size:20px">${i}</div>${l}</button>`).join('');
-  $('#app').innerHTML=({inv:vInv,acc:vAcc,bill:vBill,exp:vExp,more:vMore})[tab]();}
+ $('#who').innerHTML=`<button class="lock" onclick="Auth.signOut()" aria-label="Lock app">Lock</button>`;$('#nav').style.display='flex';
+ $('#nav').innerHTML=TABS.map(([k,l])=>`<button class="${k===tab?'on':''}" ${k===tab?'aria-current="page"':''} onclick="tab='${k}';render();scrollTo(0,0)">${icon(k)}<span>${l}</span></button>`).join('');
+ $('#app').innerHTML=(D.sampleData?'<div class="sample-banner">Sample workspace · All transactions are demonstrations</div>':'')+({home:vHome,inv:vInv,acc:vAcc,bill:vBill,exp:vExp,more:vMore})[tab]();}
+function vHome(){const unpaid=D.invoices.filter(i=>!i.paid),pending=D.invoices.filter(i=>!i.delivered),revenue=D.invoices.filter(i=>i.paid).reduce((n,i)=>n+itot(i).t,0);
+ return `<p class="eyebrow">BUSINESS OVERVIEW</p><h2>Ready for the next delivery.</h2><p class="muted">Kiln-dried hardwood · Working as ${esc(me())}</p><div class="stats"><div class="card"><span class="muted">Outstanding</span><strong>${money(unpaid.reduce((n,i)=>n+itot(i).t,0))}</strong><small>${unpaid.length} unpaid invoices</small></div><div class="card"><span class="muted">Collected</span><strong>${money(revenue)}</strong><small>Paid invoices</small></div><div class="card"><span class="muted">Deliveries</span><strong>${pending.length}</strong><small>Awaiting delivery</small></div><div class="card"><span class="muted">Customers</span><strong>${D.accounts.length}</strong><small>Active accounts</small></div></div><h3>Orders & upcoming deliveries</h3>${pending.map(i=>`<button class="card delivery" onclick="viewInv('${i.id}')"><span><b>${esc(accName(i.accountId))}</b><span class="muted">${i.date} · Order #${i.num}</span><span class="muted">${i.lines.map(l=>esc(l.qty+' × '+l.name)).join('<br>')}</span></span><strong>${money(itot(i).t)}</strong></button>`).join('')||'<div class="card muted">No pending deliveries. Create an invoice to start an order.</div>'}<h3>On hand</h3><div class="card">${D.products.map(p=>`<div class="between stock-summary"><span>${esc(p.name)}</span><b>${p.qty} ${esc(p.unit)}</b></div>`).join('')||'<p class="muted">No products yet. Add one in Stock.</p>'}</div>`;
+}
 
 /* ---- Inventory ---- */
 function vInv(){return `<div class="between"><h2>Inventory</h2><button onclick="editProd()">+ Product</button></div>`+
  D.products.map(p=>`<div class="card"><div class="between"><div><b>${esc(p.name)}</b><div class="muted">${money(p.price)} / ${esc(p.unit)}</div></div><button class="sec sm" onclick="editProd('${p.id}')">Edit</button></div>
- <div class="row" style="margin-top:8px"><button class="sm" onclick="adj('${p.id}',-1)">−</button><div style="text-align:center;font-size:22px;font-weight:700">${p.qty} <span class="muted">${esc(p.unit)}</span></div><button class="sm" onclick="adj('${p.id}',1)">+</button></div></div>`).join('')+
+ <div class="row stock-adjust" style="margin-top:8px"><button class="sm" onclick="adj('${p.id}',-1)">−</button><div style="text-align:center;font-size:22px;font-weight:700">${p.qty} <span class="muted">${esc(p.unit)}</span></div><button class="sm" onclick="adj('${p.id}',1)">+</button></div></div>`).join('')+
  `<h3>Stock history</h3><div class="card">${D.stockLog.slice(-50).reverse().map(l=>`<div class="between muted"><span>${new Date(l.at).toLocaleString()} · ${esc(l.by)}</span><span>${esc(l.name)} ${l.delta>0?'+':''}${l.delta} (${esc(l.reason)})</span></div>`).join('')||'<span class="muted">No changes yet</span>'}</div>`}
 function logStock(p,delta,reason){D.stockLog.push({at:Date.now(),by:me(),pid:p.id,name:p.name,delta,reason});if(D.stockLog.length>1000)D.stockLog.shift()}
 function adj(id,d){const p=D.products.find(x=>x.id===id);p.qty=+p.qty+d;logStock(p,d,'manual');save()}
@@ -103,7 +117,7 @@ const itot=i=>{const s=i.lines.reduce((t,l)=>t+l.qty*l.price,0),tax=s*(+i.taxRat
 const accName=id=>(D.accounts.find(a=>a.id===id)||{}).business||'(deleted account)';
 function vBill(){const un=D.invoices.filter(i=>!i.paid).reduce((t,i)=>t+itot(i).t,0);
  return `<div class="between"><h2>Invoices</h2><button onclick="editInv()">+ Invoice</button></div><div class="muted">Unpaid total: <b>${money(un)}</b></div>`+
- D.invoices.slice().reverse().map(i=>`<div class="card" onclick="viewInv('${i.id}')"><div class="between"><b>#${i.num} · ${esc(accName(i.accountId))}</b><b>${money(itot(i).t)}</b></div>
+ D.invoices.slice().reverse().map(i=>`<div class="card" onclick="viewInv('${i.id}')"><div class="between"><b>#${i.num} · ${esc(accName(i.accountId))}</b><b class="amount">${money(itot(i).t)}</b></div>
  <div class="between muted"><span>${i.date} · by ${esc(i.by)}</span><span>${i.delivered?'<span class="tag del">delivered</span> ':''}<span class="tag ${i.paid?'paid':'unpaid'}">${i.paid?'paid':'unpaid'}</span></span></div></div>`).join('')}
 let draft=null;
 function editInv(id){const i=D.invoices.find(x=>x.id===id);draft=i?JSON.parse(JSON.stringify(i)):{id:null,accountId:(D.accounts[0]||{}).id,date:today(),lines:[],taxRate:D.taxRate,note:''};drawDraft()}
@@ -121,23 +135,23 @@ function saveInv(){if(!draft.accountId)return alert('Add an account first');if(!
  D.taxRate=draft.taxRate;const id=draft.id;save();viewInv(id)}
 function viewInv(id){const i=D.invoices.find(x=>x.id===id),t=itot(i);
  modal(`<div class="between"><h2>Invoice #${i.num}</h2><button class="sec sm" onclick="closeModal()">✕</button></div><div><b>${esc(accName(i.accountId))}</b> · ${i.date}</div><div class="muted">Created by ${esc(i.by)}${i.deliveredBy?' · delivered by '+esc(i.deliveredBy):''}</div>
- <table>${i.lines.map(l=>`<tr><td>${esc(l.name)}</td><td class="r">${l.qty} × ${money(l.price)}</td><td class="r">${money(l.qty*l.price)}</td></tr>`).join('')}<tr><td colspan=2 class="r">Total</td><td class="r"><b>${money(t.t)}</b></td></tr></table>
+ ${i.note?`<p class="muted">${esc(i.note)}</p>`:''}<table>${i.lines.map(l=>`<tr><td>${esc(l.name)}</td><td class="r">${l.qty} × ${money(l.price)}</td><td class="r">${money(l.qty*l.price)}</td></tr>`).join('')}<tr><td colspan=2 class="r">Total</td><td class="r"><b>${money(t.t)}</b></td></tr></table>
  <div class="row" style="margin-top:12px"><button onclick="togglePaid('${id}')">${i.paid?'Mark unpaid':'Mark paid'}</button>${i.delivered?'':`<button onclick="deliver('${id}')">Mark delivered</button>`}</div>
- <div class="row" style="margin-top:8px"><button class="sec" onclick="printInv('${id}')">🖨 Print</button><button class="sec" onclick="saveInvPng('${id}')">🖼 Save as PNG</button><button class="sec" onclick="editInv('${id}')">Edit</button><button class="bad" onclick="if(confirm('Delete invoice #${i.num}?')){D.invoices=D.invoices.filter(x=>x.id!=='${id}');save();closeModal()}">Delete</button></div>`)}
+ <div class="row" style="margin-top:8px"><button class="sec" onclick="printInv('${id}')">Print</button><button class="sec" onclick="saveInvPng('${id}')">Save as PNG</button><button class="sec" onclick="editInv('${id}')">Edit</button><button class="bad" onclick="if(confirm('Delete invoice #${i.num}?')){D.invoices=D.invoices.filter(x=>x.id!=='${id}');save();closeModal()}">Delete</button></div>`)}
 function togglePaid(id){const i=D.invoices.find(x=>x.id===id);i.paid=!i.paid;i.paidAt=i.paid?Date.now():null;save();viewInv(id)}
 function deliver(id){const i=D.invoices.find(x=>x.id===id);i.delivered=true;i.deliveredBy=me();
  if(confirm('Deduct these items from inventory?'))i.lines.forEach(l=>{const p=D.products.find(x=>x.id===l.pid);if(p){p.qty=+p.qty-l.qty;logStock(p,-l.qty,'invoice #'+i.num)}});save();viewInv(id)}
 function invoicePrintHTML(id){const i=D.invoices.find(x=>x.id===id),t=itot(i),a=D.accounts.find(x=>x.id===i.accountId)||{};
- return{invoice:i,html:`<div style="font-family:Georgia,serif;color:#000;background:#fff"><div style="display:flex;justify-content:space-between;gap:12px"><div><h1 style="margin:0;font-size:28px">${BIZ}</h1><div>Kiln-dried hardwood · Grand Rapids, MI</div></div><div style="text-align:right"><h2 style="margin:0">INVOICE</h2><div>#${i.num}</div><div>${i.date}</div><div><b>${i.paid?'PAID':'DUE'}</b></div></div></div>
- <hr><div><b>Bill to:</b><br>${esc(a.business)}<br>${esc(a.contact)}<br>${esc(a.address)}<br>${esc(a.phone)} ${esc(a.email)}</div><br>
- <table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;border-bottom:2px solid #000">Item</th><th style="text-align:right;border-bottom:2px solid #000">Qty</th><th style="text-align:right;border-bottom:2px solid #000">Price</th><th style="text-align:right;border-bottom:2px solid #000">Amount</th></tr>
- ${i.lines.map(l=>`<tr><td>${esc(l.name)}</td><td style="text-align:right">${l.qty}</td><td style="text-align:right">${money(l.price)}</td><td style="text-align:right">${money(l.qty*l.price)}</td></tr>`).join('')}</table>
- <div style="margin-left:auto;width:40%;margin-top:12px"><div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${money(t.s)}</span></div>${i.taxRate?`<div style="display:flex;justify-content:space-between"><span>Tax (${i.taxRate}%)</span><span>${money(t.tax)}</span></div>`:''}<div style="display:flex;justify-content:space-between;font-size:1.2em;border-top:2px solid #000"><b>Total</b><b>${money(t.t)}</b></div></div>
- ${i.note?`<p>${esc(i.note)}</p>`:''}<p style="margin-top:40px">Thank you for your business!</p></div>`}}
+ return{invoice:i,html:`<article class="invoice-sheet" style="font-family:Arial,sans-serif;color:#243449;background:#fff;padding:36px;width:100%;box-sizing:border-box"><div style="display:flex;justify-content:space-between;gap:24px;border-bottom:3px solid #345d80;padding-bottom:24px"><div><h1 style="margin:0 0 8px;font-size:26px;color:#1e3a56">${BIZ}</h1><div style="font-size:13px;color:#526579">Kiln-dried hardwood<br>Grand Rapids, MI</div></div><div style="text-align:right"><h2 style="margin:0;color:#345d80;font-size:20px">INVOICE</h2><div>#${i.num}</div><div>${i.date}</div><b style="color:#345d80">${i.paid?'PAID':'DUE'}</b></div></div>
+ <div style="padding:24px 0"><b style="color:#345d80">BILL TO</b><br>${esc(a.business)}${a.contact?'<br>'+esc(a.contact):''}${a.address?'<br>'+esc(a.address):''}${a.phone||a.email?'<br>'+esc([a.phone,a.email].filter(Boolean).join(' · ')):''}</div>
+ <table style="width:100%;border-collapse:collapse;font-size:13px"><tr style="background:#e8eef4;color:#1e3a56"><th style="text-align:left;padding:12px 8px">Item</th><th style="text-align:right;padding:12px 8px">Qty</th><th style="text-align:right;padding:12px 8px">Price</th><th style="text-align:right;padding:12px 8px">Amount</th></tr>
+ ${i.lines.map(l=>`<tr><td style="padding:14px 8px;border-bottom:1px solid #dce4ec">${esc(l.name)}</td><td style="padding:14px 8px;text-align:right">${l.qty}</td><td style="padding:14px 8px;text-align:right">${money(l.price)}</td><td style="padding:14px 8px;text-align:right">${money(l.qty*l.price)}</td></tr>`).join('')}</table>
+ <div style="margin:24px 0 0 auto;width:240px"><div style="display:flex;justify-content:space-between;padding:8px 0"><span>Subtotal</span><span>${money(t.s)}</span></div>${i.taxRate?`<div style="display:flex;justify-content:space-between;padding:8px 0"><span>Tax (${i.taxRate}%)</span><span>${money(t.tax)}</span></div>`:''}<div style="display:flex;justify-content:space-between;font-size:20px;border-top:2px solid #345d80;padding:12px 0;color:#1e3a56"><b>Total</b><b>${money(t.t)}</b></div></div>
+ ${i.note?`<p style="font-size:13px;color:#526579;margin-top:28px">${esc(i.note)}</p>`:''}<p style="margin-top:36px;color:#345d80">Thank you for your business!</p></article>`}}
 function printInv(id){$('#print').innerHTML=invoicePrintHTML(id).html;window.print()}
 async function saveInvPng(id){const {invoice:i,html}=invoicePrintHTML(id);const el=$('#print');
  el.innerHTML=html;const prev=el.getAttribute('style')||'';
- el.style.cssText='display:block!important;position:fixed;left:-10000px;top:0;width:720px;padding:28px;background:#fff;color:#000;z-index:-1';
+ el.style.cssText='display:block!important;position:fixed;left:-10000px;top:0;width:720px;padding:0;background:#fff;color:#243449;z-index:-1';
  try{if(typeof html2canvas!=='function')throw Error('PNG export unavailable offline — refresh once online');
   const canvas=await html2canvas(el.firstElementChild||el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
   const blob=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(Error('Could not build PNG')),'image/png'));
@@ -150,8 +164,8 @@ async function saveInvPng(id){const {invoice:i,html}=invoicePrintHTML(id);const 
 function vExp(){const y=String(new Date().getFullYear()),ytd=D.expenses.filter(e=>e.date.startsWith(y));const by={};ytd.forEach(e=>by[e.category]=(by[e.category]||0)+e.amount);
  return `<div class="between"><h2>Expenses</h2><button onclick="editExp()">+ Expense</button></div>
  <div class="card"><b>${y} year to date</b>${CATS.filter(c=>by[c]).map(c=>`<div class="between"><span>${c}</span><span>${money(by[c])}</span></div>`).join('')}<div class="between" style="border-top:1px solid #ccc;margin-top:4px"><b>Total</b><b>${money(ytd.reduce((t,e)=>t+e.amount,0))}</b></div>
- <button class="sec" style="width:100%;margin-top:8px" onclick="expCSV()">⬇ Export CSV for taxes</button></div>`+
- D.expenses.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<div class="card" onclick="editExp('${e.id}')"><div class="between"><b>${esc(e.vendor||e.category)}</b><b>${money(e.amount)}</b></div><div class="muted">${e.date} · ${e.category} · by ${esc(e.by)}${e.note?' · '+esc(e.note):''}</div></div>`).join('')}
+ <button class="sec" style="width:100%;margin-top:8px" onclick="expCSV()">Export CSV for taxes</button></div>`+
+ D.expenses.slice().sort((a,b)=>b.date.localeCompare(a.date)).map(e=>`<div class="card" onclick="editExp('${e.id}')"><div class="between"><b>${esc(e.vendor||e.category)}</b><b class="amount">${money(e.amount)}</b></div><div class="muted">${e.date} · ${e.category} · by ${esc(e.by)}${e.note?' · '+esc(e.note):''}</div></div>`).join('')}
 function editExp(id){const e=D.expenses.find(x=>x.id===id)||{date:today(),amount:'',category:'Fuel',vendor:'',note:''};
  modal(`<h2>${id?'Edit':'New'} expense</h2><label>Date</label><input id="ed" type="date" value="${e.date}"><label>Amount</label><input id="ea" type="number" step="0.01" inputmode="decimal" value="${e.amount}">
  <label>Category</label><select id="ec">${CATS.map(c=>`<option ${c===e.category?'selected':''}>${c}</option>`).join('')}</select><label>Vendor</label><input id="ev" value="${esc(e.vendor)}"><label>Note</label><input id="en" value="${esc(e.note)}">
@@ -163,19 +177,16 @@ function expCSV(){const q=s=>'"'+String(s??'').replace(/"/g,'""')+'"';
  download('expenses-'+today()+'.csv',['Date,Amount,Category,Vendor,Note,Entered by',...D.expenses.slice().sort((a,b)=>a.date.localeCompare(b.date)).map(e=>[e.date,e.amount.toFixed(2),q(e.category),q(e.vendor),q(e.note),q(e.by)].join(','))].join('\n'),'text/csv')}
 
 /* ---- More / Backup / Users ---- */
-function vMore(){return `<h2>More</h2><div class="card"><b>Backup</b><div class="muted">Last backup: ${D.lastBackup?new Date(D.lastBackup).toLocaleString():'never'}</div>
- <div class="row" style="margin-top:8px"><button onclick="backup()">⬇ Export backup</button><button class="sec" onclick="$('#imp').click()">⬆ Import</button></div><input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importFile(this)"></div>
- <div class="card"><b>Users on this device</b><div class="muted">${Auth.listUsers().map(esc).join(', ')}</div><label>New username</label><input id="nu" autocapitalize="none"><label>Password</label><input id="np" type="password" autocomplete="new-password"><button onclick="addUser()">Add user</button></div>
- <div class="card"><div class="muted">Signed in as <b>${esc(me())}</b>. Local login only protects this device.</div><button class="bad" style="width:100%;margin-top:8px" onclick="Auth.signOut()">Sign out</button></div>`}
-async function addUser(){try{await Auth.createUser(val('nu'),val('np'));alert('User added');render()}catch(e){alert(e.message)}}
+function vMore(){return `<h2>Settings</h2><div class="card"><b>Working as</b><label for="operator">Record new activity under</label><select id="operator" onchange="localStorage.setItem('hf.operator',this.value);render()">${['Brandon','Billy'].map(n=>`<option ${me()===n?'selected':''}>${n}</option>`).join('')}</select><p class="muted">Data is local to this browser. Devices do not sync. Export a backup to transfer records.</p></div><div class="card"><b>Backup & restore</b><div class="muted">Last backup: ${D.lastBackup?new Date(D.lastBackup).toLocaleString():'never'}</div><div class="row" style="margin-top:12px"><button onclick="backup()">Export backup</button><button class="sec" onclick="$('#imp').click()">Import</button></div><input id="imp" type="file" accept=".json,application/json" style="display:none" onchange="importFile(this)"></div><div class="card"><b>Workspace data</b><p class="muted">These actions replace records on this browser only. Export a backup first.</p><button class="sec wide" onclick="resetData(true)">Reset to sample data</button><button class="bad wide" onclick="resetData(false)">Clear all data</button></div><div class="card"><b>Session lock</b><p class="muted">Test PIN: 1234. This is a device-only soft gate, not secure authentication or encryption.</p><button class="wide" onclick="Auth.signOut()">Lock app</button></div><p class="muted">Hopp Firewood · hf-v3</p>`}
+function resetData(samples){if(!confirm(samples?'Replace ALL records with sample data? Export a backup first.':'Clear ALL business records on this browser? Export a backup first.'))return;D=samples?seed():emptyData();save()}
 function backup(){D.lastBackup=Date.now();save();download('hopp-firewood-backup-'+today()+'.json',JSON.stringify({app:'hopp-firewood',version:1,exportedAt:new Date().toISOString(),data:D},null,2),'application/json')}
 function importFile(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const j=JSON.parse(r.result),d=j.data||j;
- if(!Array.isArray(d.products)||!Array.isArray(d.invoices))throw Error('Not a Hopp Firewood backup');
- if(confirm(`Replace ALL current data with this backup (${d.products.length} products, ${(d.accounts||[]).length} accounts, ${d.invoices.length} invoices, ${(d.expenses||[]).length} expenses)?`)){D=Object.assign(seed(),d);save();alert('Imported')}}catch(e){alert('Import failed: '+e.message)}inp.value=''};r.readAsText(f)}
+ if(!['products','accounts','invoices','expenses','stockLog'].every(k=>d[k]===undefined||Array.isArray(d[k]))||!Array.isArray(d.products)||!Array.isArray(d.invoices))throw Error('Not a Hopp Firewood backup');
+ if(confirm(`Replace ALL current data with this backup (${d.products.length} products, ${(d.accounts||[]).length} accounts, ${d.invoices.length} invoices, ${(d.expenses||[]).length} expenses)?`)){D=Object.assign(emptyData(),d);save();alert('Imported')}}catch(e){alert('Import failed: '+e.message)}inp.value=''};r.readAsText(f)}
 let backupAsked=false;
 function maybeAskBackup(){if(backupAsked)return;backupAsked=true;if(D.lastBackup&&Date.now()-D.lastBackup<7*864e5)return;
  modal(`<h2>Save a backup now?</h2><p class="muted">${D.lastBackup?'Last backup was '+Math.floor((Date.now()-D.lastBackup)/864e5)+' days ago.':'You have never saved a backup.'}</p><div class="row"><button onclick="backup();closeModal()">Save</button><button class="sec" onclick="closeModal()">Later</button></div>`)}
 
-function boot(){closeModal();render();if(Auth.currentUser())maybeAskBackup()}
+function boot(){closeModal();render();scrollTo(0,0);if(Auth.currentUser()&&!D.sampleData&&(D.invoices.length||D.expenses.length))maybeAskBackup()}
 boot();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});

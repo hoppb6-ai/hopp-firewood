@@ -1,35 +1,34 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#7a4a26"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1e3a56"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Firewood">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png">
 <title>Hopp Firewood</title>
 <style>
-:root{--bg:#fbf5ec;--card:#fff;--wood:#7a4a26;--dark:#4a2a12;--lt:#f0e2cc;--acc:#c46a2b;--ok:#3d7a3a;--bad:#b23a2a}
+:root{--bg:#f1f5f9;--card:#fff;--wood:#345d80;--dark:#243449;--lt:#e8eef4;--acc:#526e87;--ok:#367264;--bad:#a83d4c;--line:#dce4ec}
 *{box-sizing:border-box}html,body{margin:0;overflow-x:clip;touch-action:pan-y;max-width:100%}
-body{font:16px/1.4 -apple-system,system-ui,Roboto,sans-serif;background:var(--bg);color:var(--dark);padding-bottom:calc(76px + env(safe-area-inset-bottom))}
-header{position:sticky;top:0;background:var(--wood);color:#fff;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;display:flex;justify-content:space-between;align-items:center;z-index:5}
-header h1{font-size:18px;margin:0}#who{font-size:13px;opacity:.9}
-main{padding:12px;max-width:720px;margin:auto}
-.card{background:var(--card);border-radius:12px;padding:12px;margin:10px 0;box-shadow:0 1px 3px #0002}
-button{font:inherit;min-height:44px;padding:8px 14px;border-radius:10px;border:0;background:var(--wood);color:#fff;cursor:pointer}
-button.sec{background:var(--lt);color:var(--dark)}button.bad{background:var(--bad)}button.sm{min-width:44px;padding:6px 10px}
-input,select,textarea{font:inherit;width:100%;min-height:44px;padding:8px;border:1px solid #cdb79a;border-radius:8px;background:#fff;margin:4px 0 8px}
-label{font-size:13px;font-weight:600}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
-.between{display:flex;justify-content:space-between;align-items:center;gap:8px}.muted{color:#8a7560;font-size:13px}
-.tag{padding:2px 8px;border-radius:99px;font-size:12px;color:#fff}.paid{background:var(--ok)}.unpaid{background:var(--bad)}.del{background:var(--acc)}
-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#fff;border-top:1px solid #ddd;padding-bottom:env(safe-area-inset-bottom);z-index:5}
-nav button{flex:1;background:none;color:#8a7560;border-radius:0;min-height:60px;font-size:12px;padding:4px}nav button.on{color:var(--wood);font-weight:700;border-top:3px solid var(--wood)}
-table{width:100%;border-collapse:collapse}td,th{padding:6px 4px;text-align:left;border-bottom:1px solid #eee}.r{text-align:right}
-#modal{position:fixed;inset:0;background:#0006;display:none;align-items:flex-end;justify-content:center;z-index:10}
-#modal>div{background:var(--bg);width:100%;max-width:720px;max-height:90vh;overflow-y:auto;border-radius:16px 16px 0 0;padding:16px}
-#print{display:none}
-@media print{@page{size:letter;margin:.6in}body{background:#fff;padding:0}header,nav,main,#modal{display:none!important}#print{display:block!important;color:#000}}
+body{font:16px/1.5 -apple-system,system-ui,Roboto,sans-serif;background:var(--bg);color:var(--dark);padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+header{position:sticky;top:0;background:#1e3a56;color:#fff;padding:calc(12px + env(safe-area-inset-top)) 18px 12px;display:flex;justify-content:space-between;align-items:center;z-index:5;min-height:64px}
+header h1{font-size:18px;letter-spacing:.2px;margin:0}#who{font-size:13px}.lock{background:#ffffff19;border:1px solid #ffffff55;min-height:36px;font-size:13px;padding:6px 14px}
+main{padding:18px;max-width:720px;margin:auto}h2{font-size:24px;line-height:1.25;letter-spacing:-.5px;margin:20px 0 12px}h3{font-size:17px;margin:24px 0 10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 2px 5px #17324a06;overflow-wrap:anywhere}
+button{font:inherit;min-height:44px;padding:10px 14px;border-radius:9px;border:0;background:var(--wood);color:#fff;cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid #6b9cc5;outline-offset:3px}
+button.sec{background:var(--lt);color:var(--dark)}button.bad{background:var(--bad)}button.sm{min-width:44px;padding:6px 10px}.wide{width:100%;margin-top:10px}
+input,select,textarea{font:inherit;width:100%;min-height:44px;padding:10px;border:1px solid #bccbd9;border-radius:8px;background:#fff;color:var(--dark);margin:4px 0 12px}
+label{display:block;font-size:13px;font-weight:600;margin-top:10px}.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>*{flex:1;min-width:0}.row>button{flex:1 1 130px}.stock-adjust>button{flex:0 0 48px}.stock-adjust>div{flex:1;white-space:nowrap}.amount{white-space:nowrap;flex-shrink:0}
+.between{display:flex;justify-content:space-between;align-items:center;gap:12px}.between>*{min-width:0}.muted{color:#596d80;font-size:13px}.tag{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;color:#fff}.paid{background:var(--ok)}.unpaid{background:var(--bad)}.del{background:var(--acc)}
+nav{position:fixed;bottom:0;left:0;right:0;display:none;background:#fff;border-top:1px solid var(--line);padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5;box-shadow:0 -3px 14px #17324a08}
+nav button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:none;color:#596d80;border-radius:10px;min-height:60px;font-size:10px;padding:6px 2px;border-top:3px solid transparent}nav button.on{color:#244d70;background:#e8eef4;font-weight:700;border-top-color:#345d80}nav svg{width:22px;height:22px}
+table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:10px 4px;text-align:left;border-bottom:1px solid var(--line);overflow-wrap:anywhere}.r{text-align:right}
+#modal{position:fixed;inset:0;background:#11263888;display:none;align-items:flex-end;justify-content:center;z-index:10}#modal>div{background:var(--bg);width:100%;max-width:720px;max-height:90vh;overflow-y:auto;border-radius:18px 18px 0 0;padding:20px 18px calc(24px + env(safe-area-inset-bottom))}
+#print{display:none}.sample-banner{background:#e4edf5;color:#345d80;padding:10px 12px;font-size:11px;border-radius:8px;border:1px solid #d0deeb}.eyebrow{font-size:11px;letter-spacing:1.6px;font-weight:700;color:#526e87;margin:24px 0 8px}.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:20px}.stats .card{margin:0}.stats strong{display:block;font-size:27px;color:#1e3a56;letter-spacing:-1px;margin:6px 0}.stats small{color:#596d80;font-size:11px}.delivery{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--dark);text-align:left}.delivery .muted{display:block;margin-top:6px}.delivery strong{font-size:17px;color:#345d80;white-space:nowrap}.stock-summary{padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}.stock-summary:last-child{border:0}.stock-summary b{white-space:nowrap}
+.pin-screen{text-align:center;max-width:320px;margin:26px auto 0}.pin-mark{display:grid;place-items:center;width:60px;height:60px;margin:auto;background:#1e3a56;color:white;border-radius:16px;font-weight:700;font-size:22px;letter-spacing:2px}.pin-screen .eyebrow{margin-top:18px}.pin-screen h2{margin-top:10px}.pin-dots{display:flex;justify-content:center;gap:18px;margin:28px 0 0}.pin-dots span{height:14px;width:14px;border-radius:50%;border:2px solid #8298ac;background:#fff}.pin-dots .filled{background:#345d80;border-color:#345d80}#aerr{height:24px;font-size:13px;color:var(--bad);margin:12px 0}.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.keypad button{font-size:24px;min-height:62px;background:#fff;color:#243449;border:1px solid var(--line);box-shadow:0 2px 3px #17324a06}.keypad button.sec{font-size:14px;background:#e8eef4}.pin-note{font-size:11px;margin-top:22px}
+@media print{@page{size:letter;margin:.35in}body{background:#fff;padding:0}header,nav,main,#modal{display:none!important}#print{display:block!important;color:#243449}.invoice-sheet{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
-<header><h1>🪵 Hopp Firewood</h1><span id="who"></span></header>
+<header><h1>Hopp Firewood</h1><span id="who"></span></header>
 <main id="app"></main>
-<nav id="nav"></nav>
-<div id="modal"><div id="mbody"></div></div>
+<nav id="nav" aria-label="Main navigation"></nav>
+<div id="modal" role="dialog" aria-modal="true" aria-label="Record details"><div id="mbody"></div></div>
 <div id="print"></div>
 <script src="vendor/html2canvas.min.js"></script>
 <script src="app.js"></script></body></html>
