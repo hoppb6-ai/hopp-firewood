@@ -123,17 +123,28 @@ function viewInv(id){const i=D.invoices.find(x=>x.id===id),t=itot(i);
  modal(`<div class="between"><h2>Invoice #${i.num}</h2><button class="sec sm" onclick="closeModal()">✕</button></div><div><b>${esc(accName(i.accountId))}</b> · ${i.date}</div><div class="muted">Created by ${esc(i.by)}${i.deliveredBy?' · delivered by '+esc(i.deliveredBy):''}</div>
  <table>${i.lines.map(l=>`<tr><td>${esc(l.name)}</td><td class="r">${l.qty} × ${money(l.price)}</td><td class="r">${money(l.qty*l.price)}</td></tr>`).join('')}<tr><td colspan=2 class="r">Total</td><td class="r"><b>${money(t.t)}</b></td></tr></table>
  <div class="row" style="margin-top:12px"><button onclick="togglePaid('${id}')">${i.paid?'Mark unpaid':'Mark paid'}</button>${i.delivered?'':`<button onclick="deliver('${id}')">Mark delivered</button>`}</div>
- <div class="row" style="margin-top:8px"><button class="sec" onclick="printInv('${id}')">🖨 Print</button><button class="sec" onclick="editInv('${id}')">Edit</button><button class="bad" onclick="if(confirm('Delete invoice #${i.num}?')){D.invoices=D.invoices.filter(x=>x.id!=='${id}');save();closeModal()}">Delete</button></div>`)}
+ <div class="row" style="margin-top:8px"><button class="sec" onclick="printInv('${id}')">🖨 Print</button><button class="sec" onclick="saveInvPng('${id}')">🖼 Save as PNG</button><button class="sec" onclick="editInv('${id}')">Edit</button><button class="bad" onclick="if(confirm('Delete invoice #${i.num}?')){D.invoices=D.invoices.filter(x=>x.id!=='${id}');save();closeModal()}">Delete</button></div>`)}
 function togglePaid(id){const i=D.invoices.find(x=>x.id===id);i.paid=!i.paid;i.paidAt=i.paid?Date.now():null;save();viewInv(id)}
 function deliver(id){const i=D.invoices.find(x=>x.id===id);i.delivered=true;i.deliveredBy=me();
  if(confirm('Deduct these items from inventory?'))i.lines.forEach(l=>{const p=D.products.find(x=>x.id===l.pid);if(p){p.qty=+p.qty-l.qty;logStock(p,-l.qty,'invoice #'+i.num)}});save();viewInv(id)}
-function printInv(id){const i=D.invoices.find(x=>x.id===id),t=itot(i),a=D.accounts.find(x=>x.id===i.accountId)||{};
- $('#print').innerHTML=`<div style="font-family:Georgia,serif"><div style="display:flex;justify-content:space-between"><div><h1 style="margin:0">${BIZ}</h1><div>Kiln-dried hardwood · Grand Rapids, MI</div></div><div style="text-align:right"><h2 style="margin:0">INVOICE</h2><div>#${i.num}</div><div>${i.date}</div><div><b>${i.paid?'PAID':'DUE'}</b></div></div></div>
+function invoicePrintHTML(id){const i=D.invoices.find(x=>x.id===id),t=itot(i),a=D.accounts.find(x=>x.id===i.accountId)||{};
+ return{invoice:i,html:`<div style="font-family:Georgia,serif;color:#000;background:#fff"><div style="display:flex;justify-content:space-between;gap:12px"><div><h1 style="margin:0;font-size:28px">${BIZ}</h1><div>Kiln-dried hardwood · Grand Rapids, MI</div></div><div style="text-align:right"><h2 style="margin:0">INVOICE</h2><div>#${i.num}</div><div>${i.date}</div><div><b>${i.paid?'PAID':'DUE'}</b></div></div></div>
  <hr><div><b>Bill to:</b><br>${esc(a.business)}<br>${esc(a.contact)}<br>${esc(a.address)}<br>${esc(a.phone)} ${esc(a.email)}</div><br>
  <table style="width:100%;border-collapse:collapse"><tr><th style="text-align:left;border-bottom:2px solid #000">Item</th><th style="text-align:right;border-bottom:2px solid #000">Qty</th><th style="text-align:right;border-bottom:2px solid #000">Price</th><th style="text-align:right;border-bottom:2px solid #000">Amount</th></tr>
  ${i.lines.map(l=>`<tr><td>${esc(l.name)}</td><td style="text-align:right">${l.qty}</td><td style="text-align:right">${money(l.price)}</td><td style="text-align:right">${money(l.qty*l.price)}</td></tr>`).join('')}</table>
  <div style="margin-left:auto;width:40%;margin-top:12px"><div style="display:flex;justify-content:space-between"><span>Subtotal</span><span>${money(t.s)}</span></div>${i.taxRate?`<div style="display:flex;justify-content:space-between"><span>Tax (${i.taxRate}%)</span><span>${money(t.tax)}</span></div>`:''}<div style="display:flex;justify-content:space-between;font-size:1.2em;border-top:2px solid #000"><b>Total</b><b>${money(t.t)}</b></div></div>
- ${i.note?`<p>${esc(i.note)}</p>`:''}<p style="margin-top:40px">Thank you for your business!</p></div>`;window.print()}
+ ${i.note?`<p>${esc(i.note)}</p>`:''}<p style="margin-top:40px">Thank you for your business!</p></div>`}}
+function printInv(id){$('#print').innerHTML=invoicePrintHTML(id).html;window.print()}
+async function saveInvPng(id){const {invoice:i,html}=invoicePrintHTML(id);const el=$('#print');
+ el.innerHTML=html;const prev=el.getAttribute('style')||'';
+ el.style.cssText='display:block!important;position:fixed;left:-10000px;top:0;width:720px;padding:28px;background:#fff;color:#000;z-index:-1';
+ try{if(typeof html2canvas!=='function')throw Error('PNG export unavailable offline — refresh once online');
+  const canvas=await html2canvas(el.firstElementChild||el,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+  const blob=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(Error('Could not build PNG')),'image/png'));
+  const name='invoice-'+i.num+'.png';const file=new File([blob],name,{type:'image/png'});
+  if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'Invoice #'+i.num,text:'Invoice #'+i.num});return}catch(e){if(e&&e.name==='AbortError')return}}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1500)
+ }catch(e){alert(e.message||String(e))}finally{el.innerHTML='';el.setAttribute('style',prev)}}
 
 /* ---- Expenses ---- */
 function vExp(){const y=String(new Date().getFullYear()),ytd=D.expenses.filter(e=>e.date.startsWith(y));const by={};ytd.forEach(e=>by[e.category]=(by[e.category]||0)+e.amount);
