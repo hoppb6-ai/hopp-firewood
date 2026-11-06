@@ -3,7 +3,33 @@
 A static, local-first PWA for Brandon and Billy. GitHub Pages serves the root.
 No backend, external calendar integration, accounts, notifications or device sync.
 
-## hf-v4 — calendar, planning and reporting
+## hf-v5 — iPhone-safe image/PDF saving
+
+PNG and PDF now use a two-step flow on every page and invoice:
+1. Tap the export format and wait for the preview to appear.
+2. Tap **Share / Save to Photos** (PNG), then choose **Save Image** / **Save to
+   Photos** in the iPhone share sheet. For PDF, tap **Share / Save PDF** and choose
+   **Save to Files**.
+
+If sharing is unavailable or rejected, the preview stays visible. Press and hold
+its real image and choose **Save to Photos**. The image is a decoded PNG data URL,
+not a canvas; native touch callouts and selection are explicitly allowed. A PDF
+also has a report-image preview (long-press saves that PNG, not the PDF), an explicit
+Open PDF link, and a Download button. Desktop/Android retain download fallback.
+Cancelled shares are quiet and never trigger an unwanted download.
+
+Rendering, FileReader work and File creation finish before the share button is
+shown. Its synchronous click handler calls `navigator.share` with those same
+prebuilt Files before any Promise/await boundary, preserving iOS user activation.
+The browser/OS controls available share-sheet actions; the app cannot confirm
+that a Photos item was saved. No direct Photos-library access is requested.
+Closing the sheet releases retained files and PDF URLs, and cancels stale renders.
+
+Existing data/schema is unchanged. Service-worker cache is **hf-v5**; reopen/reload
+the installed app online to receive the update. If it still shows the old export
+flow, fully close and reopen it; do not clear site data, which would erase records.
+
+## Calendar, planning and reporting
 
 - Home: swipeable month calendar, arrow navigation, day-detail sheets and direct
   creation of tasks, milestones, planned bills and delivery reminders.
@@ -26,8 +52,8 @@ No backend, external calendar integration, accounts, notifications or device syn
   Calendar exports include a branded month grid and agenda.
   PNG exports split into parts at 25 rows; PDF tables paginate with repeating brand,
   column headings and page numbers. CSV escapes spreadsheet formula prefixes.
-- File sharing uses the native share sheet where supported, otherwise downloads.
-  Cancelled shares are respected; failed/unsupported sharing falls back to download.
+- PNG/PDF preview first, then share on a fresh button tap. iPhone has a real-image
+  long-press fallback; desktop/Android can download. CSV keeps direct sharing/download.
 - Light/dark/device appearance modes. Exports always use a clean white/blue theme.
 
 ### Offline libraries and license
@@ -35,7 +61,7 @@ No backend, external calendar integration, accounts, notifications or device syn
 `vendor/html2canvas.min.js` and `vendor/jspdf.umd.min.js` (jsPDF 4.2.1, MIT; license
 bundled in `vendor/jspdf.LICENSE.txt`) are served locally, not from a runtime CDN.
 Only jsPDF's core text/drawing APIs are used; optional HTML/font modules are not
-loaded. The `hf-v4` service worker caches both libraries, scripts and app assets.
+loaded. The `hf-v5` service worker caches both libraries, scripts and app assets.
 Cache cleanup affects only older `hf-*` caches, not other PWAs on the same origin.
 
 ### Data and upgrade behavior
@@ -75,6 +101,19 @@ The suite uses isolated browser storage at 390×844, America/Detroit. It covers 
 calendar indicators/legend/day details/arrows/swipe, project/goal/calendar CRUD,
 computed progress, every page's PNG/PDF/CSV bytes, sharing (mocked, no real send),
 dark mode, migration, clear/reset, and offline reload/exports. It checks console
-errors and horizontal overflow. `ARTIFACT_DIR` defaults to `/workspace/firewood-v3`;
+errors and horizontal overflow. `ARTIFACT_DIR` defaults to `/workspace/firewood-v4`;
 `TEST_URL` overrides the local origin. Never point tests at a real user profile.
 PDFs can be inspected with `pdfinfo`, `pdftotext` and `pdftoppm`.
+
+### iPhone/PWA regression tests
+
+```sh
+CHROME_PATH=/opt/google/chrome/chrome node tests/ios-export.cjs
+```
+
+Uses an iPhone user agent, touch viewport and mocked standalone mode/share API in
+headless Chromium. Tests every page's PNG/PDF preview, decoded real images, native
+callout styles, no automatic sharing during preparation, trusted synchronous
+button invocation, unchanged File identity/name/MIME, rejected/cancelled/missing
+sharing, invoice PNG, cleanup/cancellation and offline use. This is not a physical
+iPhone/Safari test and cannot exercise the native Photos permission/share UI.
