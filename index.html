@@ -3,7 +3,7 @@
 <meta name="theme-color" content="#1e3a56"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default"><meta name="apple-mobile-web-app-title" content="Firewood">
 <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-180.png"><link rel="icon" href="icon-192.png">
-<title>Hopp Firewood</title>
+<title>Hopp Firewood</title><meta name="description" content="Seasoned hardwood by the cord for wood-fired kitchens. Local-first business workspace.">
 <style>
 :root{--bg:#f1f5f9;--card:#fff;--wood:#345d80;--dark:#243449;--lt:#e8eef4;--acc:#526e87;--ok:#367264;--bad:#a83d4c;--line:#dce4ec}
 *{box-sizing:border-box}html,body{margin:0;overflow-x:clip;touch-action:pan-y;max-width:100%}
@@ -30,14 +30,16 @@ html[data-theme="dark"]{color-scheme:dark;--bg:#111e2c;--card:#1c2c3d;--dark:#e0
 .tag{white-space:nowrap;flex-shrink:0}#app[data-view="home"]{padding:14px}#app[data-view="home"] h2{font-size:22px;margin:10px 0}#app[data-view="home"] .sample-banner{padding:8px 10px;font-size:10px}#app[data-view="home"] .page-tools{margin:8px 0 4px}#app[data-view="home"] .mini-kpis{margin:10px 0}#app[data-view="home"] .mini-kpis>div{padding:8px 10px}#app[data-view="home"] .calendar-card{margin:10px 0}#app[data-view="home"] .legend{margin:10px 0;gap:4px}html[data-theme="dark"] button.bad{background:var(--bad);color:#fff}@media(prefers-color-scheme:dark){html:not([data-theme="light"]) button.bad{background:var(--bad);color:#fff}}
 .share-prepared{min-height:56px;font-weight:700;font-size:17px}.save-photo-help{padding:12px;border-radius:10px;background:var(--lt);color:var(--dark);font-size:14px}.export-preview figure{margin:18px 0 8px}.export-preview figcaption{margin-bottom:8px;font-size:11px}.export-preview-img{display:block;width:100%;height:auto;background:white;border:1px solid var(--line);border-radius:6px;-webkit-touch-callout:default;-webkit-user-select:auto;user-select:auto;touch-action:auto}.preview-link{display:block;min-height:44px;text-align:center;padding:10px;color:var(--wood);text-decoration:underline}
 .user-switch{background:transparent;color:#fff;font-size:11px;min-height:36px;padding:4px 8px}.user-screen{max-width:480px;margin:50px auto;text-align:center}.user-choices{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:28px 0}.user-choice{color:var(--dark);padding:24px 12px;display:flex;flex-direction:column;align-items:center;gap:16px}.avatar{display:grid;place-items:center;width:70px;height:70px;background:var(--lt);color:var(--wood);border-radius:50%;font-size:25px;font-weight:700}.finance-links{display:flex;gap:6px;flex-wrap:wrap;margin:16px 0}.finance-links button{font-size:11px;min-height:36px}.net-worth{background:#1e3a56;color:#fff}.net-worth strong{display:block;font-size:34px;letter-spacing:-1px;margin:10px 0}.net-worth small{font-size:12px}.ledger-row{padding:10px 0;border-bottom:1px solid var(--line);font-size:13px}.ledger-row:last-child{border:0}.ledger-row span{min-width:0}.tax-warning{padding:16px;background:var(--lt);border-left:4px solid var(--wood);border-radius:8px;font-size:13px}.tax-warning p{font-size:12px}.source-links{display:grid;gap:14px;margin:18px 0}.source-links a{color:var(--wood);font-size:12px}.note-body{white-space:pre-wrap}.empty-state h3{margin:0 0 10px}.record-by{font-size:11px!important;margin:8px 0}.cleanup-notice{border-left:4px solid var(--wood)}
+.customer-card{display:block;width:100%;text-align:left;color:var(--dark);font-weight:400}.customer-revenue{font-size:23px;font-weight:700;color:var(--heading);margin:10px 0}.customer-revenue small{display:block;font-size:11px;font-weight:400;color:var(--muted)}#update-banner{position:sticky;top:64px;z-index:9;background:#345d80;padding:8px 14px}#update-banner button{display:block;width:100%;background:#e8eef4;color:#1e3a56;font-weight:700}.customer-card .between b{font-size:16px}#app[data-view="customer"] .card h3{margin-top:0}
 @media print{@page{size:letter;margin:.35in}body{background:#fff;padding:0}header,nav,main,#modal{display:none!important}#print{display:block!important;color:#243449}.invoice-sheet{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style></head><body>
 <header><h1>Hopp Firewood</h1><span id="who"></span></header>
+<div id="update-banner" role="status" aria-live="polite" hidden></div>
 <main id="app"></main>
 <nav id="nav" aria-label="Main navigation"></nav>
 <div id="modal" role="dialog" aria-modal="true" aria-label="Record details"><div id="mbody"></div></div>
 <div id="print"></div>
-<script src="vendor/html2canvas.min.js"></script>
-<script src="vendor/jspdf.umd.min.js"></script>
-<script src="planning.js"></script><script src="finance.js"></script><script src="migration.js"></script><script src="exports.js"></script>
-<script src="app.js"></script></body></html>
+<script src="vendor/html2canvas.min.js?v=5.1"></script>
+<script src="vendor/jspdf.umd.min.js?v=5.1"></script>
+<script src="planning.js?v=5.1"></script><script src="finance.js?v=5.1"></script><script src="demo.js?v=5.1"></script><script src="migration.js?v=5.1"></script><script src="updates.js?v=5.1"></script><script src="exports.js?v=5.1"></script>
+<script src="app.js?v=5.1"></script></body></html>

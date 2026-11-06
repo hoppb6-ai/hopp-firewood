@@ -1,23 +1,38 @@
 'use strict';
-/* No demo seeding. Old releases did not tag each seed with provenance, so cleanup
- * is deliberately conservative: exact known seed IDs + untouched fingerprints,
- * never a global 'sampleData' wipe or a fuzzy '(Sample)' name search. Ambiguous,
- * edited, newly attributed and user-linked records survive. A local recovery
- * snapshot is retained before any removal; it is exportable, never sent. */
-function legacySampleCandidates(d){const ids={};for(const k of DATA_LISTS)ids[k]=new Set();const clean=r=>!r.createdBy&&!r.updatedBy&&!r.updatedAt;
- const same=(r,fields)=>clean(r)&&Object.entries(fields).every(([k,v])=>JSON.stringify(r[k])===JSON.stringify(v));
- const prods={wood:{name:'Kiln-dried firewood',unit:'bundle',price:8,qty:120},pizza:{name:'Pizza-oven hardwood splits',unit:'box',price:35,qty:48},smoker:{name:'Smoker hardwood chunks',unit:'bag',price:15,qty:65}};
- if(d.sampleData)for(const p of d.products)if(prods[p.id]&&same(p,prods[p.id])&&!p.cost&&(p.cordsPerUnit===undefined||p.cordsPerUnit===({wood:.006,pizza:.025,smoker:.005})[p.id]))ids.products.add(p.id);
- const accounts={nh:{business:'New Holland Knickerbocker',contact:'',phone:'',email:'',address:'Grand Rapids, MI',notes:'Sample delivery details — confirm receiving instructions before delivery.',usual:'8 boxes pizza-oven wood',priceNotes:'Sample pricing: $35 / box'},'sample-pizza':{business:'Riverbend Pizza Co. (Sample)',contact:'Sample customer',address:'Fictional Grand Rapids business',notes:'Sample: use rear receiving entrance.',usual:'6 boxes pizza-oven wood'},'sample-bbq':{business:'Lakeshore Smokehouse (Sample)',contact:'Sample customer',address:'Fictional West Michigan business',notes:'Sample: call before delivery.',usual:'12 bags smoker wood'},'sample-home':{business:'Maple Grove Campground (Sample)',contact:'Sample customer',address:'Fictional West Michigan campground',notes:'Sample: stack at woodshed.',usual:'30 firewood bundles'}};
- for(const a of d.accounts)if(accounts[a.id]&&same(a,accounts[a.id])&&(a.id!=='nh'||d.sampleData)&&(!a.phone)&&(!a.email)&&(!a.priceNotes||a.id==='nh'))ids.accounts.add(a.id);
- const inv={1001:['nh',true,true,[['pizza',8,35],['smoker',4,15]]],1002:['sample-bbq',false,true,[['smoker',12,15]]],1003:['sample-pizza',false,false,[['pizza',6,35]]],1004:['sample-home',false,false,[['wood',30,8]]],1005:['nh',false,false,[['pizza',8,35]]]};
- for(const i of d.invoices){const p=inv[i.num];if(!p||i.id!=='sample-'+i.num||!clean(i)||i.note!=='SAMPLE INVOICE — demonstration only, not an actual charge.'||i.accountId!==p[0]||i.paid!==p[1]||i.delivered!==p[2]||+i.taxRate||n0(i.salesTaxCollected)>0||i.by!==({1001:'Brandon',1002:'Billy',1003:'Brandon',1004:'Billy',1005:'Billy'})[i.num]||(i.deliveredBy&&i.deliveredBy!==i.by)||(i.paidAt&&Math.abs(i.paidAt-i.createdAt)>1000))continue;const expected=p[3].map(([pid,qty,price])=>({pid,qty,price})),lines=i.lines.map(({pid,qty,price})=>({pid,qty,price}));if(JSON.stringify(lines)!==JSON.stringify(expected)||i.lines.some(l=>l.name!==({wood:'Kiln-dried firewood (bundle)',pizza:'Pizza-oven hardwood splits (box)',smoker:'Smoker hardwood chunks (bag)'})[l.pid]))continue;const offsets={1001:-7,1002:-3,1003:1,1004:2,1005:0},created=new Date(i.createdAt);if(!Number.isFinite(+created))continue;created.setDate(created.getDate()+offsets[i.num]);if(i.date!==dateString(created)||(i.dueDate&&i.dueDate!==i.date)||(i.deliveryDate&&i.deliveryDate!==i.date)||(i.deliveredDate&&i.deliveredDate!==i.date))continue;ids.invoices.add(i.id)}
- const ex={fuel:{amount:62.4,category:'Fuel',vendor:'Delivery fuel (Sample)',note:'Sample expense',by:'Billy'},bags:{amount:48,category:'Packaging',vendor:'Wood bags & labels (Sample)',note:'Sample expense',by:'Brandon'},supplies:{amount:95,category:'Supplies',vendor:'Kiln supplies (Sample)',note:'Sample expense',by:'Brandon'}};for(const e of d.expenses)if(ex[e.id]&&same(e,ex[e.id])&&e.date===({fuel:'2026-11-03',bags:'2026-10-31',supplies:'2026-10-28'})[e.id]&&!e.receipt)ids.expenses.add(e.id);
- const projects={'sample-project-winter':{name:'Winter delivery readiness (Sample)',progress:65,next:'Label 40 pizza-oven boxes',due:'2026-11-14',complete:false},'sample-project-route':{name:'Knickerbocker standing route (Sample)',progress:20,next:'Draft a weekly route checklist',due:'2026-12-05',complete:false}};for(const p of d.projects)if(projects[p.id]&&same(p,projects[p.id]))ids.projects.add(p.id);
- const goals={'sample-goal-revenue':{name:'Monthly collected revenue (Sample)',kind:'revenue',target:2000,current:0,start:'2026-11-01',end:'2026-11-30',complete:false},'sample-goal-cords':{name:'Fulfilled cord equivalents (Sample)',kind:'cords',target:1,current:0,start:'2026-11-01',end:'2026-11-30',complete:false},'sample-goal-accounts':{name:'Recurring customers (Sample)',kind:'custom',target:4,current:2,start:'2026-11-01',end:'2026-12-12',complete:false}};for(const g of d.goals)if(goals[g.id]&&same(g,goals[g.id]))ids.goals.add(g.id);
- const events={'sample-task-today':['Prepare the Knickerbocker load (Sample)','2026-11-05','task','Check box labels and load straps.',0,false],'sample-work':['Organize the dry storage bay (Sample)','2026-11-03','task','Completed sample work.',0,true],'sample-milestone':['Winter packaging ready (Sample)','2026-11-14','goal','Sample milestone.',0,false],'sample-bill':['Trailer maintenance bill (Sample)','2026-11-18','expense','Planned bill, not a recorded expense yet.',85,false],'sample-next-delivery':['Holiday route planning (Sample)','2026-12-05','task','Plan only; no customer commitment.',0,false],'sample-next-milestone':['Review winter stock goal (Sample)','2026-12-12','goal','Review sample targets.',0,false],'sample-next-bill':['Packaging order budget (Sample)','2026-12-20','expense','Planned sample bill.',120,false]};for(const e of d.events){const a=events[e.id];if(a&&same(e,{title:a[0],date:a[1],kind:a[2],note:a[3],amount:a[4],done:a[5]}))ids.events.add(e.id)}
- // Never break a user's invoice links or discard a product with manual history.
- for(const i of d.invoices.filter(i=>!ids.invoices.has(i.id))){ids.accounts.delete(i.accountId);i.lines.forEach(l=>ids.products.delete(l.pid))}for(const l of d.stockLog)if(l.reason!=='Sample opening stock')ids.products.delete(l.pid);
+/* v5.1 deliberately removes known historical seed identities even if edited.
+ * Per-record flags, exact IDs and known seeded names establish provenance;
+ * the old global sampleData bit never means “delete every record”. */
+function legacySampleCandidates(d){
+ const known={products:['wood','pizza','smoker'],accounts:['nh','sample-pizza','sample-bbq','sample-home'],expenses:['fuel','bags','supplies']};
+ const names=new Set(['New Holland Knickerbocker','Riverbend Pizza Co. (Sample)','Lakeshore Smokehouse (Sample)','Maple Grove Campground (Sample)','Delivery fuel (Sample)','Wood bags & labels (Sample)','Winter delivery readiness (Sample)','Knickerbocker standing route (Sample)'].map(x=>x.toLowerCase()));
+ const ids={};for(const k of DATA_LISTS){ids[k]=new Set();for(const r of d[k]||[]){const id=String(r.id||''),label=String(r.business||r.name||r.title||r.vendor||'').trim().toLowerCase(),flag=r.sample===true||r.sampleData===true||r.seededSample===true||r.isSample===true;
+  if(id.startsWith('demo-v51-')||r.demoVersion===DEMO_VERSION)continue;
+  if(flag||id.startsWith('sample-')||(known[k]||[]).includes(id)||names.has(label)||/\(sample\)\s*$/i.test(label)||(r.demo===true&&r.demoVersion!==DEMO_VERSION))ids[k].add(r.id);
+ }
+ }
+ for(const r of d.stockLog||[])if(ids.products.has(r.pid)||r.reason==='Sample opening stock'||r.seededSample===true)ids.stockLog.add(r.id||r);
  return ids;
 }
-function migrateData(){let changed=false;for(const k of DATA_LISTS)if(!Array.isArray(D[k])){D[k]=[];changed=true}if(!D.legacyCleanedV6){const original=JSON.stringify(D),ids=legacySampleCandidates(D);let removed=0;for(const k of Object.keys(ids).filter(k=>k!=='stockLog')){const rows=D[k].filter(r=>ids[k].has(r.id));rows.forEach(r=>r.seededSample=true);removed+=rows.length;D[k]=D[k].filter(r=>!ids[k].has(r.id))}const logs=D.stockLog.filter(l=>l.reason==='Sample opening stock'&&l.by==='Brandon'&&l.delta===({wood:120,pizza:48,smoker:65})[l.pid]&&l.name===({wood:'Kiln-dried firewood',pizza:'Pizza-oven hardwood splits',smoker:'Smoker hardwood chunks'})[l.pid]);removed+=logs.length;D.stockLog=D.stockLog.filter(l=>!logs.includes(l));if(removed){try{if(!localStorage.getItem('hf.pre-v6-recovery'))localStorage.setItem('hf.pre-v6-recovery',original)}catch(e){D=JSON.parse(original);D.cleanupNotice='Legacy cleanup was skipped because a recovery snapshot could not be stored. Export a backup and review old records manually.';removed=0}if(removed)D.cleanupNotice=`Removed ${removed} precisely identified, untouched legacy demonstration records. User records, edited records and ambiguous older records were kept. A pre-cleanup recovery backup is available in Settings. Review any retained older entries yourself.`}if(!removed&&D.sampleData&&!D.cleanupNotice)D.cleanupNotice='Legacy records were reviewed. No untouched demonstration records could be removed safely; ambiguous or edited records were kept. Review any remaining older examples manually.';D.legacyCleanedV6=true;changed=true}D.sampleData=false;D.financeSettings=Object.assign(financeDefaults(),D.financeSettings||{});D.schemaVersion=6;if(!D.projects.some(p=>p.id===D.currentProjectId))D.currentProjectId=(D.projects.find(p=>!p.complete)||{}).id||null;try{Storage.save(D)}catch(e){D.cleanupNotice='This device could not save the migration, possibly because storage is full. Export a JSON backup before editing records.'}}
+function normalizeWoodCopy(value){
+ if(typeof value==='string'&&!value.startsWith('data:image/'))return value.replace(/ki[l]n(?:[-\s]+dried)?(?:\s+hardwood|\s+firewood)?/gi,'Seasoned hardwood');
+ if(Array.isArray(value))return value.map(normalizeWoodCopy);
+ if(value&&typeof value==='object')for(const key of Object.keys(value))value[key]=normalizeWoodCopy(value[key]);
+ return value;
+}
+function migrateData(){
+ const original=JSON.stringify(D);try{
+  for(const k of DATA_LISTS)if(!Array.isArray(D[k]))D[k]=[];
+  D.financeSettings=Object.assign(financeDefaults(),D.financeSettings||{});
+  if(!D.demoInitializedV51){
+   const ids=legacySampleCandidates(D);let removed=0;
+   const removedIds=new Set(Object.values(ids).flatMap(s=>[...s]).filter(x=>typeof x==='string'));
+   for(const r of D.activity)if(removedIds.has(r.recordId))ids.activity.add(r.id);
+   for(const k of DATA_LISTS){const before=D[k].length;D[k]=D[k].filter(r=>!ids[k].has(r.id)&&!ids[k].has(r));removed+=before-D[k].length;}
+   if(removed&&!localStorage.getItem('hf.pre-v7-recovery'))localStorage.setItem('hf.pre-v7-recovery',original);
+   removeDemoRecords();appendDemoData();D.cleanupNotice=(removed?`Removed ${removed} old demonstration records, including edited seeds. A pre-update recovery backup is in Settings. `:'')+'Loaded fictional kitchen demo activity for Nov 2025–Nov 2026. Your own records were kept. Settings lets you remove or reload the demo; nothing syncs between phones.';
+  }
+  normalizeWoodCopy(D);D.sampleData=false;D.legacyCleanedV6=true;D.schemaVersion=7;
+  if(!D.projects.some(p=>p.id===D.currentProjectId))D.currentProjectId=(D.projects.find(p=>!p.complete)||{}).id||null;
+  Storage.save(D);
+ }catch(e){D=JSON.parse(original);for(const k of DATA_LISTS)if(!Array.isArray(D[k]))D[k]=[];D.financeSettings=Object.assign(financeDefaults(),D.financeSettings||{});D.cleanupNotice='Update data could not be saved on this device. Export a JSON backup, free browser storage, and reopen online. No original records were removed.';}
+}

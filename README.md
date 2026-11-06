@@ -1,21 +1,64 @@
-# Hopp Firewood — app v5 / cache hf-v6
+# Hopp Firewood — app v5.1 / cache hf-v7
 
 Static, local-first PWA for Brandon and Billy, served by GitHub Pages. No backend,
 accounts, cloud sync, external calendars, push notifications or automatic sends.
 
-## Start empty; choose who is working
+## Kitchen demonstration; choose who is working
 
 PIN **1234** → **Brandon / Billy** → calendar Home. Unlock/user choice lasts only
 for this browser tab's session. **Switch** changes partner without relocking;
 **Lock** clears both. This is a public client-side soft gate, **not encryption or
 secure authentication**. Do not store banking credentials in the app.
 
-Fresh installs contain no customers, products, transactions, projects, goals or
-example records. Every business section has a friendly first-entry prompt. The
-calendar retains projects/goals, day sheets, month arrows/swipes, indicators,
-KPIs and task creation. Quarterly federal tax dates are built-in *planning
-reminders*, not invented transactions or recorded liabilities. They are Apr 15,
-Jun 15, Sep 15 and the following Jan 15; check holiday/weekend adjustments.
+On this release’s first run, the app removes known v2–v4 demonstration seeds
+(including edited seeds) and loads **10 fictional kitchen customers**. All
+new demo records have `demo: true`, `demoVersion: "v51"` and stable demo IDs;
+normal edits keep these flags. Own records are not wiped by a global sample bit.
+
+The full rolling year is **Nov 5, 2025–Nov 5, 2026**. Each customer has **53 weekly
+invoices**, dated Nov 5, 2025 through Nov 4, 2026, with next-day deliveries.
+Demand is steady, not seasonal; months naturally contain four or five weekly
+orders, with partial November boundary months. Revenue means invoice subtotals
+**before tax, including paid and unpaid invoices**. These are kitchen cooking
+accounts, not residential heating customers. All products are seasoned hardwood
+by the full cord or face cord, plus delivery and rack-stacking services.
+
+| Fictional kitchen | Annual invoiced revenue |
+| --- | ---: |
+| Ember Table Restaurant Group | $20,140 |
+| Cinder Lane Pizzeria | $19,610 |
+| Copper Oak Steakhouse | $20,935 |
+| Juniper Hearth Bakery | $19,080 |
+| Blue Ash Barbecue | $20,405 |
+| Stonebridge Woodfire Bistro | $20,670 |
+| Foxglove Flatbread Kitchen | $19,345 |
+| Red Maple Chophouse | $21,200 |
+| Willow & Flame Trattoria | $19,875 |
+| Hearthstone Smoke Kitchen | $21,465 |
+
+**Ember Table** demonstrates three rotating delivery locations, a purchasing
+contact, consolidated net-30 terms, a fictional resale certificate, weekly
+calendar reminders and location-specific invoice notes. **Cinder Lane** shows
+back-door/gate instructions, a covered stacking rack, preferred delivery days,
+a **$1,250 prepaid credit reference**, linked mileage, a related expense with a
+fictional receipt photo, and a partner revision note. Credit is informational:
+it does not apply to invoices or alter running cash automatically. Certificates,
+names, phone numbers, addresses, receipts and transactions are fictional.
+
+**More → Settings → Load demo data / Remove demo data** each requires confirmation.
+Load replaces the tagged demo, not your own records; repeated loads do not add
+copies. Remove also removes edited demo records. Your own records remain, but
+links from them to removed demo accounts/products will no longer resolve.
+Removed demo data does not reappear on reload. **Clear all data** remains and
+stays empty until you explicitly choose Load demo data. Back up before either.
+Each phone has independent data; there is no sync.
+
+Quarterly federal tax dates remain built-in *planning reminders*, not recorded
+transactions: Apr 15, Jun 15, Sep 15 and the following Jan 15; confirm calendar
+adjustments. Monthly expenses, mileage, equipment depreciation, loans, partner
+contributions/draws, goals and the current project complete the demo workspace.
+Inventory purchases are not modeled as COGS in the rough tax estimator; its
+limitations still apply to these illustrative numbers.
 
 New/edited business records retain creator and last editor, with a local activity
 trail (latest 500 changes). Names are device attribution, not legal signatures.
@@ -94,23 +137,35 @@ Save to Files on compatible phones; download/open fallbacks are also available.
 **Import JSON backup REPLACES** this device's records, **does not merge**, and
 validates before replacement. Back up first. Separate phone edits do not sync.
 Treat exported files as private business information. Clear all data is confirmed;
-there is no Reset to sample data option.
+demo management is separate from clearing all data.
 
-The app key stays `hf.data.v1`, schema becomes 6. Legacy releases did not retain
-per-record seed provenance. One-time cleanup uses exact known seed fingerprints
-and IDs, not fuzzy names or a global sample flag wipe. Edited/attributed/ambiguous
-records survive, as do seeded customers/products linked from retained user invoices
-or manual stock history. Only precisely identified untouched demonstration records
-are marked and removed. A full **local pre-cleanup recovery snapshot** is stored
-before removal and downloadable in Settings; no backup is transmitted. A one-time
-notice explains the cleanup. If snapshot storage fails, removal is skipped.
-Older unlabelled or edited examples may therefore require **manual review**; do not
-silently delete uncertain records. Clear all data also removes the recovery snapshot.
+The app key stays `hf.data.v1`, schema becomes 7. The one-time v5.1 migration
+matches old per-record sample flags, exact seed IDs and known seeded names,
+including `(Sample)` labels. It removes edited seeds too; it does not delete all
+rows just because `sampleData` is true. Arbitrary user-created products are not
+removed for mentioning pizza or smokers. Retained copy is normalized to seasoned
+hardwood. A **local pre-update recovery snapshot** is saved before old-seed removal
+and can be downloaded in Settings; no backup is transmitted. If saving fails,
+original data stays untouched and the app shows a storage warning.
 
-Cache **hf-v6** bundles app scripts, html2canvas and jsPDF 4.2.1 (MIT, license in
-vendor) locally; no runtime CDN. Reopen/reload online to receive the update. If
-necessary fully close/reopen the installed app. **Do not clear Safari/site data**
-to update: that deletes records. Only old `hf-*` caches are cleaned up.
+Cache **hf-v7** includes every script and bundled export library, without a runtime
+CDN. Installation uses `skipWaiting`, activation awaits `clients.claim`, and HTML
+and JS are **network-first with HTTP-cache bypass**, falling back offline. App
+scripts also carry `?v=5.1`. The app checks for SW updates on opening, returning
+to the foreground, reconnecting and once per minute. An **Update available - tap
+to reload** banner appears when an existing controlled page receives an update.
+
+### Billy’s Android update steps (do not delete site storage)
+1. Connect to the internet and export a JSON backup if the phone has real entries.
+2. Fully close Hopp Firewood (remove it from Recents), then reopen it online.
+3. Tap **Update available - tap to reload** if shown. If still on the old screen,
+   open `https://hoppb6-ai.github.io/hopp-firewood/?v=5.1` in Chrome and refresh
+   once, then close/reopen the installed app.
+4. Confirm **v5.1** on the PIN footer or **App version v5.1 · Cache hf-v7** in
+   More → Settings. PIN 1234 → Billy → calendar. Demo loads once on this device;
+   use Settings → Load demo data if you previously removed it.
+5. Do **not** clear Chrome/site data or uninstall as an update fix: local records
+   can be lost. If storage is full, export the backup before freeing anything.
 
 ## iPhone PNG / PDF saving
 
@@ -130,22 +185,24 @@ cannot be confirmed by the app. This is not direct Photos-library access.
 
 ```sh
 python3 -m http.server 8765 --bind 127.0.0.1
+CHROME_PATH=/opt/google/chrome/chrome node tests/v51.cjs
 CHROME_PATH=/opt/google/chrome/chrome node tests/acceptance.cjs
 CHROME_PATH=/opt/google/chrome/chrome node tests/ios-export.cjs
 ```
 
 Isolated 390×844 America/Detroit browser storage only, never a real user profile.
-Tests create their own temporary records; none are seeded into shipped app data.
-Acceptance covers PIN/user flow, all empty states, attribution, form-driven
-financial entries and independently checked math, split/cap/loss cases, receipt
-compression, planning CRUD, tax reminders, every page's nonempty PNG/PDF/CSV,
-JSON round trip/invalid imports, conservative legacy cleanup, dark mode and offline.
-Historical migration fixtures are generated from commit `65445e5` in a Node sandbox.
+Tests use isolated browser contexts and temporary records, never a real device’s
+storage. The v5.1 suite covers demo totals/cadence, showcase fields and receipts,
+all-page CSV and PNG/PDF exports, load/remove/clear persistence, edited v4 and
+already-reviewed v5 migrations, online SW upgrade/banner and offline operation.
+The existing acceptance suite removes its isolated demo before independent
+ledger-math/CRUD/backup/export regressions. Historical fixtures come from commit
+`65445e5` in a Node sandbox.
 The iPhone regression suite mocks native sharing: real preview images, long-press
 styles, synchronous trusted-button activation, File identity/MIME, error/cancel/
 missing API paths, invoice PNG, JSON backup, offline, desktop/Android fallback.
 No real message/share is sent. Headless Chromium is **not physical iPhone Safari**
 and cannot exercise the native Photos UI.
 
-Artifacts default `/workspace/firewood-v5/`; `ARTIFACT_DIR` and `TEST_URL` override.
+Artifacts default `/workspace/firewood-v51/`; `ARTIFACT_DIR` and `TEST_URL` override.
 PDFs can be inspected with `pdfinfo`, `pdftotext`, `pdftoppm`.
