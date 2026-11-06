@@ -31,8 +31,8 @@ function migrateData(){
    if(removed&&!localStorage.getItem('hf.pre-v7-recovery'))localStorage.setItem('hf.pre-v7-recovery',original);
    removeDemoRecords();appendDemoData();D.cleanupNotice=(removed?`Removed ${removed} old demonstration records, including edited seeds. A pre-update recovery backup is in Settings. `:'')+'Loaded fictional kitchen demo activity for Nov 2025–Nov 2026. Your own records were kept. Settings lets you remove or reload the demo; nothing syncs between phones.';
   }
-  normalizeWoodCopy(D);D.sampleData=false;D.legacyCleanedV6=true;D.schemaVersion=7;
+  normalizeWoodCopy(D);D.sampleData=false;D.legacyCleanedV6=true;D.schemaVersion=8;
   if(!D.projects.some(p=>p.id===D.currentProjectId))D.currentProjectId=(D.projects.find(p=>!p.complete)||{}).id||null;
-  Storage.save(D);
- }catch(e){D=JSON.parse(original);for(const k of DATA_LISTS)if(!Array.isArray(D[k]))D[k]=[];D.financeSettings=Object.assign(financeDefaults(),D.financeSettings||{});D.cleanupNotice='Update data could not be saved on this device. Export a JSON backup, free browser storage, and reopen online. No original records were removed.';}
+  initializeTaxV52();Storage.save(D);
+ }catch(e){D=JSON.parse(original);for(const k of DATA_LISTS)if(!Array.isArray(D[k]))D[k]=[];D.financeSettings=Object.assign(financeDefaults(),D.financeSettings||{});initializeTaxV52();D.cleanupNotice='Update data could not be saved on this device. Export a JSON backup, free browser storage, and reopen online. No original records were removed.';}
 }

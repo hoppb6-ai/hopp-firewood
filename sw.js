@@ -1,6 +1,6 @@
 'use strict';
-const C='hf-v7',VERSION='5.1';
-const F=['./','index.html','app.js','planning.js','finance.js','migration.js','demo.js','updates.js','exports.js','manifest.webmanifest','icon-192.png','icon-512.png','icon-180.png','vendor/html2canvas.min.js','vendor/jspdf.umd.min.js'];
+const C='hf-v8',VERSION='5.2';
+const F=['./','index.html','app.js','planning.js','finance.js','depreciation.js','tax-law.js','tax-planner.js','migration.js','demo.js','updates.js','exports.js','manifest.webmanifest','icon-192.png','icon-512.png','icon-180.png','vendor/html2canvas.min.js','vendor/jspdf.umd.min.js'];
 self.addEventListener('install',e=>{e.waitUntil((async()=>{const c=await caches.open(C);await Promise.all(F.map(async path=>{const request=new Request(path,{cache:'reload'}),response=await fetch(request);if(!response.ok)throw Error('Precache failed: '+path);await c.put(path,response)}));await self.skipWaiting()})())});
 self.addEventListener('activate',e=>{e.waitUntil((async()=>{await Promise.all((await caches.keys()).filter(k=>k.startsWith('hf-')&&k!==C).map(k=>caches.delete(k)));await self.clients.claim();for(const client of await self.clients.matchAll({type:'window'}))client.postMessage({type:'APP_UPDATED',version:VERSION})})())});
 self.addEventListener('message',e=>{if(e.data?.type==='SKIP_WAITING')self.skipWaiting()});
